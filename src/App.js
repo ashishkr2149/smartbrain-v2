@@ -34,35 +34,44 @@ class App extends Component {
     this.state = {
       input: "",
       imageUrl: "",
-      box: {},
+      box: [],
       route: "signin",
       isSignedIn: false
     }
   }
 
-  calculateFaceLocation = (data) => {
-    const clarifaiFace =JSON.parse(data, null, 2).outputs[0].data.regions[0].region_info.bounding_box;
-    const image = document.getElementById("inputimage");
-    const width = Number(image.width);
-    const height = Number(image.height);
-    return {
-      leftCol: clarifaiFace.left_col * width,
-      rightCol: width - (clarifaiFace.right_col * width),
-      topRow: clarifaiFace.top_row * height,
-      bottomRow: height - (clarifaiFace.bottom_row * height)
-    }
+  calculateFaceLocation = (data, i) => {
+      let clarifaiFace = data.outputs[0].data.regions[i].region_info.bounding_box;
+      let image = document.getElementById('inputimage');
+      let width = Number(image.width);
+      let height = Number(image.height);
+      return {
+        leftcol: clarifaiFace.left_col * width,
+        toprow: clarifaiFace.top_row * height,
+        rightcol: width - (clarifaiFace.right_col * width),
+        bottomrow: height - (clarifaiFace.bottom_row * height)
+      }
   }
 
   displayBox = (box) => {
-    this.setState({box: box})
+    console.log(box)
+    this.setState({
+      box: [...this.state.box, box]
+    });
   }
 
   onInputChange = (event) => {
-    this.setState({input: event.target.value});
+    this.setState({
+      box: [],
+      input: event.target.value}
+      );
   }
 
   onButtonSubmit = (event) => {
-    this.setState({imageUrl: this.state.input})
+    this.setState({
+      box: [],
+      imageUrl: this.state.input
+    })
 
       const raw = JSON.stringify({
         "user_app_id": {
@@ -91,9 +100,11 @@ class App extends Component {
       // https://api.clarifai.com/v2/models/{YOUR_MODEL_ID}/outputs
       // this will default to the latest version_id
       fetch("https://api.clarifai.com/v2/models/f76196b43bbd45c99b4f3cd8e8b40a8a/outputs", requestOptions)
-        .then(response => response.text())
+        .then(response => response.json())
         .then(result => {
-          this.displayBox(this.calculateFaceLocation(result));
+          for(let i = 0; i < result.outputs[0].data.regions.length; i++){
+          this.displayBox(this.calculateFaceLocation(result, i));
+          }
         })
         .catch(error => console.log('error', error));
 
